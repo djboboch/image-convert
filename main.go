@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	_ "image/jpeg"
@@ -15,47 +16,67 @@ import (
 	"github.com/nickalie/go-webpbin"
 )
 
+type Flags struct {
+	directoryName string
+	filename      string
+}
+
+type Settings struct {
+}
+
 func main() {
 
-	var directory string
-	var filename string
-	flag.StringVar(&directory, "dir", "", "Directory to run the conversion for")
-	flag.StringVar(&filename, "f", "", "File to convert")
+	flags := Flags{}
+	flag.StringVar(&flags.directoryName, "dir", "", "Directory to run the conversion for")
+	flag.StringVar(&flags.filename, "f", "", "File to convert")
 	//recursive := flag.Bool("r", false, "Should the tool do a recursive convert.")
 	flag.Parse()
 
-	if directory == "" && filename == "" {
+	if flags.directoryName == "" && flags.filename == "" {
 		fmt.Println("No -dir or -f argument provided.")
 		flag.PrintDefaults()
-		os.Exit(0)
+		os.Exit(1)
 	}
 
-	if directory != "" && filename != "" {
+	if flags.directoryName != "" && flags.filename != "" {
 		fmt.Println("Provide only one argument for the conversion location. Cannot use both -dir or -f.")
 		flag.PrintDefaults()
-		os.Exit(0)
+		os.Exit(1)
 	}
 
-	if directory != "" {
-		files, err := ioutil.ReadDir(directory)
+	s := Settings{}
+
+	path, err := os.Getwd()
+	if err != nil {
+		log.Fatal()
+	}
+	s.callpath = path
+
+	if flags.directoryName != "" {
+		files, err := ioutil.ReadDir(flags.directoryName)
 		if err != nil {
 			log.Fatal(err)
 		}
 		for _, f := range files {
-			fmt.Println(f.Name())
+			if strings.Contains(f.Name(), ".jpg") {
+
+				EncodeToWebp(filepath.Join(s.callpath, flags.directoryName, f.Name()))
+
+			}
 		}
 	}
 
-	if filename != "" {
-		EncodeToWebp(filename)
+	if flags.filename != "" {
+		EncodeToWebp(flags.filename)
 	}
 
 }
 
 // EncodeToWebp encodes the passed
-func EncodeToWebp(name string) {
+func EncodeToWebp(path string) {
+	fmt.Println(path)
 
-	openedImage, err := os.Open(name)
+	openedImage, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
 	}
