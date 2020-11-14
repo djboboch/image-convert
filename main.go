@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/djboboch/image-convert/pkg/settings"
+
 	_ "image/jpeg"
 	_ "image/png"
 
@@ -21,11 +23,9 @@ type Flags struct {
 	filename      string
 }
 
-type Settings struct {
-}
-
 func main() {
 
+	// Flag parsing
 	flags := Flags{}
 	flag.StringVar(&flags.directoryName, "dir", "", "Directory to run the conversion for")
 	flag.StringVar(&flags.filename, "f", "", "File to convert")
@@ -44,13 +44,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	s := Settings{}
+	//Creates an instance of settings
+	s := settings.GetSettings()
 
 	path, err := os.Getwd()
 	if err != nil {
 		log.Fatal()
 	}
-	s.callpath = path
+
+	s.SetCallPath(path)
 
 	if flags.directoryName != "" {
 		files, err := ioutil.ReadDir(flags.directoryName)
@@ -60,58 +62,73 @@ func main() {
 		for _, f := range files {
 			if strings.Contains(f.Name(), ".jpg") {
 
-				EncodeToWebp(filepath.Join(s.callpath, flags.directoryName, f.Name()))
+				ConvertToWebp(filepath.Join(s.GetCallPath(), flags.directoryName, f.Name()))
 
 			}
 		}
 	}
 
 	if flags.filename != "" {
-		EncodeToWebp(flags.filename)
+		ConvertToWebp(flags.filename)
 	}
 
 }
 
-// EncodeToWebp encodes the passed
-func EncodeToWebp(path string) {
+// ConvertToWebp converts the passed in filename .jpeg or .png to .webp file
+func ConvertToWebp(path string) {
 	fmt.Println(path)
 
-	openedImage, err := os.Open(path)
-	if err != nil {
-		log.Fatal(err)
-	}
+	openedImage := OpenImage(path)
+
 	defer openedImage.Close()
-
-	filename := strings.Split(openedImage.Name(), ".")[0]
-
-	// Cretes the new file for conversion into webp
-	newImage, err := os.Create(filename + ".webp")
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	decodedImage := DecodeImage(openedImage)
 
-	// Encodes the image interface into the webp format
-	if err := webpbin.Encode(newImage, decodedImage); err != nil {
-		newImage.Close()
+	filename := strings.Split(openedImage.Name(), ".")[0]
+
+	EncodeWebp(decodedImage, filename)
+
+}
+
+// OpenImage converts the passed in image path to golang File type
+func OpenImage(path string) *os.File {
+
+	image, err := os.Open(path)
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err := newImage.Close(); err != nil {
-		log.Fatal(err)
-	}
+	return image
 
 }
 
 // DecodeImage decodes jpeg or png to Golang Image Interface
 func DecodeImage(f *os.File) image.Image {
 
-	img, _, err := image.Decode(f)
+	decodedImage, _, err := image.Decode(f)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return img
+	return decodedImage
 
+}
+
+func EncodeWebp(imageData image.Image, filename string) {
+
+	// Function takes in a image.Image and name of file
+	// Creates a new file with .webp extension to save to
+	newImage, err := os.Create(filename + ".webp")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Encodes the image.Image interface into the newly created .webp file
+	if err := webpbin.Encode(newImage, imageData); err != nil {
+		newImage.Close()
+		log.Fatal(err)
+	}
+	// closes the files open stream
+	if err := newImage.Close(); err != nil {
+		log.Fatal(err)
+	}
 }
