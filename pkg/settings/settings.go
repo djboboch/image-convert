@@ -25,5 +25,5 @@ func (s *settings) SetCallPath(path string) {
 
 func (s *settings) GetCallPath() string {
 
-	return ""
+	return s.callpath
 }
