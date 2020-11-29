@@ -18,13 +18,25 @@ import (
 	"github.com/nickalie/go-webpbin"
 )
 
+const ()
+
+// Flags is a structure to represent passed in flas from the cli
 type Flags struct {
 	directoryName string
 	filename      string
 }
 
-func main() {
+type File struct {
+	Name string
+}
 
+type Folder struct {
+	Name    string
+	Files   []File
+	Folders []*Folder
+}
+
+func main() {
 	// Flag parsing
 	flags := Flags{}
 	flag.StringVar(&flags.directoryName, "dir", "", "Directory to run the conversion for")
@@ -47,36 +59,29 @@ func main() {
 	//Creates an instance of settings
 	s := settings.GetSettings()
 
-	path, err := os.Getwd()
+	callPath, err := os.Getwd()
 	if err != nil {
 		log.Fatal()
 	}
 
-	s.SetCallPath(path)
+	s.SetCallPath(callPath)
 
 	if flags.directoryName != "" {
-		files, err := ioutil.ReadDir(flags.directoryName)
-		if err != nil {
-			log.Fatal(err)
-		}
-		for _, f := range files {
-			if strings.Contains(f.Name(), ".jpg") {
 
-				ConvertToWebp(filepath.Join(s.GetCallPath(), flags.directoryName, f.Name()))
+		folderTree := CreateFolderTree(filepath.Join(s.GetCallPath(), flags.directoryName))
 
-			}
-		}
+		folderTree.convertImages()
+
 	}
 
-	if flags.filename != "" {
-		ConvertToWebp(flags.filename)
-	}
-
+	// if flags.filename != "" {
+	// 	ConvertToWebp(flags.filename)
+	// }
 }
 
 // ConvertToWebp converts the passed in filename .jpeg or .png to .webp file
 func ConvertToWebp(path string) {
-	fmt.Println(path)
+	os.Chdir(path)
 
 	openedImage := OpenImage(path)
 
@@ -114,6 +119,7 @@ func DecodeImage(f *os.File) image.Image {
 
 }
 
+// EncodeWebp encodes the passed in image.Image data into the passed in filename string
 func EncodeWebp(imageData image.Image, filename string) {
 
 	// Function takes in a image.Image and name of file
@@ -130,5 +136,116 @@ func EncodeWebp(imageData image.Image, filename string) {
 	// closes the files open stream
 	if err := newImage.Close(); err != nil {
 		log.Fatal(err)
+	}
+}
+
+func newFolder(name string) *Folder {
+	return &Folder{name, []File{}, []*Folder{}}
+}
+
+func newFile(name string) File {
+	return File{name}
+}
+
+// func (f *Folder) addFolder(path []string) {
+// 	for i, segment := range path {
+// 		if i == len(path)-1 { // last segment == new folder
+// 			f.Folders[segment] = newFolder(segment)
+// 		} else {
+// 			f.getFolder(segment).addFolder(path[1:])
+// 		}
+// 	}
+// }
+
+// func (f *Folder) addFile(path []string) {
+// 	for i, segment := range path {
+// 		if i == len(path)-1 { // last segment == file
+// 			f.Files = append(f.Files, File{segment})
+// 		} else {
+// 			f.getFolder(segment).addFile(path[1:])
+// 			return
+// 		}
+// 	}
+// }
+
+func (f *Folder) Print() string {
+	var str string
+	for _, file := range f.Files {
+		str += f.Name + string(filepath.Separator) + file.Name + "\n"
+	}
+	for _, folder := range f.Folders {
+		str += folder.Print()
+	}
+	return str
+}
+
+// func createFolderStrucutre(path string) (*Folder, error) {
+
+// 	startpath := path
+// 	rootFolder := newFolder(startpath)
+
+// 	visit := func(path string, info os.FileInfo, err error) error {
+// 		segments := strings.Split(path, string(filepath.Separator))
+// 		fmt.Println(segments)
+// 		if info.IsDir() && info.Name() == ".git" || info.Name() == "vendor" {
+// 			return filepath.SkipDir
+// 		}
+// 		if info.IsDir() {
+// 			if path != startpath {
+// 				rootFolder(segments)
+// 			}
+// 		} else {
+// 			rootFolder.addFile(segments[len(segments)-1])
+// 		}
+// 		return nil
+// 	}
+
+// 	err := filepath.Walk(startpath, visit)
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+
+// 	log.Printf("%v\n", rootFolder)
+
+// 	return rootFolder, err
+// }
+
+// Read directory and return slice of Fileinfo
+func ReadDirectory(directory string) []os.FileInfo {
+
+	files, err := ioutil.ReadDir(directory)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return files
+}
+
+func CreateFolderTree(path string) *Folder {
+
+	rootFolder := newFolder(path)
+
+	for _, file := range ReadDirectory(path) {
+
+		fileExtenstion := filepath.Ext(file.Name())
+
+		if file.IsDir() {
+			// Call CreateFolderTree for the inside folder
+			rootFolder.Folders = append(rootFolder.Folders, CreateFolderTree(filepath.Join(path, file.Name())))
+		} else if fileExtenstion == ".jpg" || fileExtenstion == ".png" {
+			rootFolder.Files = append(rootFolder.Files, newFile(filepath.Join(path, file.Name())))
+		}
+	}
+
+	return rootFolder
+}
+
+func (f *Folder) convertImages() {
+	for _, file := range f.Files {
+		ConvertToWebp(file.Name)
+	}
+
+	for _, folder := range f.Folders {
+		folder.convertImages()
 	}
 }
