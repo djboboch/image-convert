@@ -147,27 +147,6 @@ func newFile(name string) File {
 	return File{name}
 }
 
-// func (f *Folder) addFolder(path []string) {
-// 	for i, segment := range path {
-// 		if i == len(path)-1 { // last segment == new folder
-// 			f.Folders[segment] = newFolder(segment)
-// 		} else {
-// 			f.getFolder(segment).addFolder(path[1:])
-// 		}
-// 	}
-// }
-
-// func (f *Folder) addFile(path []string) {
-// 	for i, segment := range path {
-// 		if i == len(path)-1 { // last segment == file
-// 			f.Files = append(f.Files, File{segment})
-// 		} else {
-// 			f.getFolder(segment).addFile(path[1:])
-// 			return
-// 		}
-// 	}
-// }
-
 func (f *Folder) Print() string {
 	var str string
 	for _, file := range f.Files {
@@ -178,37 +157,6 @@ func (f *Folder) Print() string {
 	}
 	return str
 }
-
-// func createFolderStrucutre(path string) (*Folder, error) {
-
-// 	startpath := path
-// 	rootFolder := newFolder(startpath)
-
-// 	visit := func(path string, info os.FileInfo, err error) error {
-// 		segments := strings.Split(path, string(filepath.Separator))
-// 		fmt.Println(segments)
-// 		if info.IsDir() && info.Name() == ".git" || info.Name() == "vendor" {
-// 			return filepath.SkipDir
-// 		}
-// 		if info.IsDir() {
-// 			if path != startpath {
-// 				rootFolder(segments)
-// 			}
-// 		} else {
-// 			rootFolder.addFile(segments[len(segments)-1])
-// 		}
-// 		return nil
-// 	}
-
-// 	err := filepath.Walk(startpath, visit)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-
-// 	log.Printf("%v\n", rootFolder)
-
-// 	return rootFolder, err
-// }
 
 // Read directory and return slice of Fileinfo
 func ReadDirectory(directory string) []os.FileInfo {
