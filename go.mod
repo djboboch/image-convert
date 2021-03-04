@@ -1,4 +1,4 @@
-module github.com/djboboch/image-convert
+module github.com/djboboch/gowebp
 
 go 1.15
 
@@ -6,6 +6,7 @@ require (
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/frankban/quicktest v1.11.2 // indirect
 	github.com/golang/snappy v0.0.2 // indirect
+	github.com/leaanthony/clir v1.0.4 // indirect
 	github.com/mholt/archiver v3.1.1+incompatible // indirect
 	github.com/nickalie/go-binwrapper v0.0.0-20190114141239-525121d43c84 // indirect
 	github.com/nickalie/go-webpbin v0.0.0-20170427122138-7e79cf5bb01e
